@@ -29,7 +29,7 @@ fn main () {
     }
 }
 
-// Displays the default folder if no arguments is given.
+// Displays your system's default folder.
 fn template_folder() {
     println!("Your default template folder is: {:?}", template_dir());    
 }
@@ -73,12 +73,11 @@ fn list_files() {
     }
 }
 
-// Unwraps the default template folder from your system and return the PathBuf.
+// Unwraps the default template folder to be used inside other functions.
 fn un_path() -> PathBuf {
     let default_dir = match template_dir() {
         Some(default_dir) => default_dir,
         None => panic!("Could not open default template folder."),
     };
-
     default_dir
 }
