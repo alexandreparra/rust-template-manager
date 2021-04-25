@@ -39,8 +39,8 @@ fn copy_file(name: &PathBuf) {
     let mut default_path = un_path();
     default_path.push(name);
 
-    if let Err(_) = fs::copy(default_path, name) {
-        println!("Couldn't reach file.");
+    if let Err(e) = fs::copy(default_path, name) {
+        println!("{}", e);
     } else {
         println!("File copied!");
     }
@@ -51,8 +51,8 @@ fn create_file(file: PathBuf) {
     let mut file_path = un_path();
     file_path.push(file);
 
-    if let Err(_) = std::fs::File::create(file_path) {
-        println!("Couldn't create file.")
+    if let Err(e) = std::fs::File::create(file_path) {
+        println!("{}", e)
     } else {
         println!("File created.")
     }
