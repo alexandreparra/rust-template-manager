@@ -16,6 +16,10 @@ enum Manager {
     Create {
         file: PathBuf,
     },
+    #[structopt(name = "delete", about = "Delete file inside the default template folder.")]
+    Delete {
+        file: PathBuf,
+    },
     #[structopt(name = "list", about = "List your template files inside your template folder.")]
     List,
 }
@@ -24,14 +28,15 @@ fn main () {
     match Manager::from_args() {
         Manager::Folder => template_folder(),
         Manager::Copy { file_name } => copy_file(&file_name),
-        Manager::Create {file } => create_file(file),
+        Manager::Create { file } => create_file(file),
+        Manager::Delete { file } => println!("TODO"),
         Manager::List => list_files(),
     }
 }
 
 // Displays your system's default folder.
 fn template_folder() {
-    println!("Your default template folder is: {:?}", template_dir());    
+    println!("Your default template folder is: {:?}", un_path());    
 }
 
 // Copy a valid file from the template folder to your current directory.
