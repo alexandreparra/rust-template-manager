@@ -91,9 +91,6 @@ fn list_files() {
 
 // Unwraps the default template folder to be used inside other functions.
 fn un_path() -> PathBuf {
-    let default_dir = match template_dir() {
-        Some(default_dir) => default_dir,
-        None => panic!("Could not open default template folder."),
-    };
+    let default_dir = template_dir().expect("Coudn't find the default template folder");
     default_dir
 }
