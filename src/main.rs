@@ -18,7 +18,7 @@ enum Manager {
     },
     #[structopt(name = "delete", about = "Delete file inside the default template folder.")]
     Delete {
-        file: PathBuf,
+        file_name: PathBuf,
     },
     #[structopt(name = "list", about = "List your template files inside your template folder.")]
     List,
@@ -29,7 +29,7 @@ fn main () {
         Manager::Folder => template_folder(),
         Manager::Copy { file_name } => copy_file(&file_name),
         Manager::Create { file } => create_file(file),
-        Manager::Delete { file } => println!("TODO"),
+        Manager::Delete { file_name } => delete_file(&file_name),
         Manager::List => list_files(),
     }
 }
@@ -56,10 +56,21 @@ fn create_file(file: PathBuf) {
     let mut file_path = un_path();
     file_path.push(file);
 
-    if let Err(e) = std::fs::File::create(file_path) {
+    if let Err(e) = fs::File::create(file_path) {
         println!("{}", e)
     } else {
         println!("File created.")
+    }
+}
+
+fn delete_file(file: &PathBuf) {
+    let mut file_path = un_path();
+    file_path.push(file);
+
+    if let Err(e) = fs::remove_file(file_path) {
+        println!("{}", e);
+    } else {
+        println!("File deleted");
     }
 }
 
