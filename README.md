@@ -2,7 +2,9 @@
 
 Rust Template Manager (rtm) is a simple CLI program used to create/copy/delete files from your system default template folder.
 
-It is meant to be minimal and straightforward so it only works on systems with greatly defined default template folders.
+Rtm works by searching for your "Templates" folder inside your home directory, so for example, it doesn't follow the XDG 
+convention on Linux. That's because rtm is meant to run on GUI and terminal systems (like WSL) too, so you can take
+advantage of template management on any type of system.
 
 ### Syntax
 Print your default template folder path:
