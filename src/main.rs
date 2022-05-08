@@ -1,7 +1,9 @@
+use std::{env, io};
 use std::path::PathBuf;
 use std::fs;
+use std::process::Command;
 use structopt::StructOpt;
-use dirs::template_dir;
+use dirs::home_dir;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "rtm", about = "Easily manage your template files through the CLI.")]
@@ -24,7 +26,7 @@ enum Manager {
     List,
 }
 
-fn main () {
+fn main() {
     match Manager::from_args() {
         Manager::Folder => template_folder(),
         Manager::Copy { file_name } => copy_file(&file_name),
@@ -34,12 +36,12 @@ fn main () {
     }
 }
 
-// Displays your system's default folder.
+/// Displays your system's default folder.
 fn template_folder() {
-    println!("Your default template folder is: {:?}", un_path());    
+    println!("Your default template folder is: {:?}", un_path());
 }
 
-// Copy a valid file from the template folder to your current directory.
+/// Copy a valid file from the template folder to your current directory.
 fn copy_file(name: &PathBuf) {
     let mut default_path = un_path();
     default_path.push(name);
@@ -51,18 +53,21 @@ fn copy_file(name: &PathBuf) {
     }
 }
 
-// Create a file inside your default template folder.
+/// Create a file inside your default template folder.
 fn create_file(file: PathBuf) {
     let mut file_path = un_path();
     file_path.push(file);
 
-    if let Err(e) = fs::File::create(file_path) {
+    if let Err(e) = fs::File::create(&file_path) {
         println!("{}", e)
     } else {
         println!("File created.")
     }
+
+    ask_user_to_open_editor(&file_path);
 }
 
+/// Delete a file from your default template folder.
 fn delete_file(file: &PathBuf) {
     let mut file_path = un_path();
     file_path.push(file);
@@ -74,7 +79,7 @@ fn delete_file(file: &PathBuf) {
     }
 }
 
-// List the files inside your template folder.
+/// List the files inside your template folder.
 fn list_files() {
     let default_dir = un_path();
 
@@ -89,8 +94,39 @@ fn list_files() {
     }
 }
 
-// Unwraps the default template folder to be used inside other functions.
+fn ask_user_to_open_editor(file: &PathBuf) {
+    println!("Do you want to edit this file? y/N");
+
+    let mut line = String::new();
+    io::stdin().read_line(&mut line).expect("Couldn't read line");
+
+    let response: &str = line.trim();
+
+    match response.to_lowercase().as_str() {
+        "yes" | "ye" | "y" => open_editor(file),
+        "no" | "n" => return,
+        _ => {
+            ask_user_to_open_editor(file);
+        }
+    }
+}
+
+fn open_editor(file_path: &PathBuf) {
+    let editor = "EDITOR";
+
+    match env::var(editor) {
+        Ok(editor) => {
+            Command::new(editor)
+                .arg(file_path)
+                .status()
+                .expect("Failed to edit your file.");
+        }
+        Err(_) => println!("Couldn't find your default editor, please set the environment variable $EDITOR")
+    }
+}
+
+/// Unwraps the default template folder to be used inside other functions.
 fn un_path() -> PathBuf {
-    let default_dir = template_dir().expect("Coudn't find the default template folder");
-    default_dir
+    let default_dir = home_dir().expect("Couldn't find the default template folder");
+    default_dir.join("Templates")
 }
