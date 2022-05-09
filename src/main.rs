@@ -97,16 +97,16 @@ fn list_files() {
 fn ask_user_to_open_editor(file: &PathBuf) {
     println!("Do you want to edit this file? y/N");
 
-    let mut line = String::new();
-    io::stdin().read_line(&mut line).expect("Couldn't read line");
+    loop {
+        let mut line = String::new();
+        io::stdin()
+            .read_line(&mut line)
+            .expect("Couldn't read line");
 
-    let response: &str = line.trim();
-
-    match response.to_lowercase().as_str() {
-        "yes" | "ye" | "y" => open_editor(file),
-        "no" | "n" => return,
-        _ => {
-            ask_user_to_open_editor(file);
+        match line.trim().to_lowercase().as_str() {
+            "yes" | "ye" | "y" => open_editor(file),
+            "no" | "n" => return,
+            _ => continue
         }
     }
 }
