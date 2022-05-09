@@ -105,7 +105,7 @@ fn ask_user_to_open_editor(file: &PathBuf) {
 
         match line.trim().to_lowercase().as_str() {
             "yes" | "ye" | "y" => open_editor(file),
-            "no" | "n" => return,
+            "no" | "n" => break,
             _ => continue
         }
     }
