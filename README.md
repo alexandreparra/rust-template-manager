@@ -6,6 +6,9 @@ Rtm works by searching for your "Templates" folder inside your home directory, s
 convention on Linux. That's because rtm is meant to run on GUI and terminal systems (like WSL) too, so you can take
 advantage of template management on any type of system.
 
+Tested on:
+[X] - Linux (WSL and Native)
+
 ### Syntax
 Print your default template folder path:
 ```shell
