@@ -1,28 +1,41 @@
-use std::{env, io};
-use std::path::PathBuf;
-use std::fs;
-use std::process::Command;
-use structopt::StructOpt;
 use dirs::home_dir;
+use std::fs;
+use std::io::Result;
+use std::path::PathBuf;
+use std::process::{Command, Stdio};
+use std::{env, io};
+use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
-#[structopt(name = "rtm", about = "Easily manage your template files through the CLI.")]
+#[structopt(
+    name = "rtm",
+    about = "Easily manage your template files through the CLI."
+)]
 enum Manager {
-    #[structopt(name = "folder", about = "Define the default folder for your template files.")]
+    #[structopt(
+        name = "folder",
+        about = "Define the default folder for your template files."
+    )]
     Folder,
-    #[structopt(name = "copy", about = "Copy the desire template file inside the current folder.")]
-    Copy {
-        file_name: PathBuf,
-    },
-    #[structopt(name = "create", about = "Create a file inside your default template folder.")]
-    Create {
-        file: PathBuf,
-    },
-    #[structopt(name = "delete", about = "Delete file inside the default template folder.")]
-    Delete {
-        file_name: PathBuf,
-    },
-    #[structopt(name = "list", about = "List your template files inside your template folder.")]
+    #[structopt(
+        name = "copy",
+        about = "Copy the desire template file inside the current folder."
+    )]
+    Copy { file_name: PathBuf },
+    #[structopt(
+        name = "create",
+        about = "Create a file inside your default template folder."
+    )]
+    Create { file: PathBuf },
+    #[structopt(
+        name = "delete",
+        about = "Delete file inside the default template folder."
+    )]
+    Delete { file_name: PathBuf },
+    #[structopt(
+        name = "list",
+        about = "List your template files inside your template folder."
+    )]
     List,
 }
 
@@ -59,12 +72,13 @@ fn create_file(file: PathBuf) {
     file_path.push(file);
 
     if let Err(e) = fs::File::create(&file_path) {
-        println!("{}", e)
+        println!("{}", e);
     } else {
-        println!("File created.")
+        println!("File created.");
+        if ask_user_to_open_editor() {
+            open_editor(&file_path);
+        }
     }
-
-    ask_user_to_open_editor(&file_path);
 }
 
 /// Delete a file from your default template folder.
@@ -94,7 +108,7 @@ fn list_files() {
     }
 }
 
-fn ask_user_to_open_editor(file: &PathBuf) {
+fn ask_user_to_open_editor() -> bool {
     println!("Do you want to edit this file? y/N");
 
     loop {
@@ -104,25 +118,37 @@ fn ask_user_to_open_editor(file: &PathBuf) {
             .expect("Couldn't read line");
 
         match line.trim().to_lowercase().as_str() {
-            "yes" | "ye" | "y" => open_editor(file),
-            "no" | "n" => break,
-            _ => continue
+            "yes" | "ye" | "y" => return true,
+            "no" | "n" => return false,
+            _ => continue,
         }
     }
 }
 
 fn open_editor(file_path: &PathBuf) {
-    let editor = "EDITOR";
+    let env_var = "EDITOR";
 
-    match env::var(editor) {
+    match env::var(env_var) {
         Ok(editor) => {
-            Command::new(editor)
-                .arg(file_path)
-                .status()
-                .expect("Failed to edit your file.");
+            open_file(editor, file_path).expect("Error while editing the file");
         }
-        Err(_) => println!("Couldn't find your default editor, please set the environment variable $EDITOR")
+        Err(_) => println!(
+            "Couldn't find your default editor, please set the environment variable $EDITOR"
+        ),
     }
+}
+
+#[inline]
+fn open_file(editor: String, file_path: &PathBuf) -> Result<()> {
+    Command::new(&editor)
+        .arg(file_path)
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .output()?
+        .status;
+
+    Ok(())
 }
 
 /// Unwraps the default template folder to be used inside other functions.
