@@ -1,4 +1,4 @@
-use dirs::home_dir;
+use dirs::{home_dir, template_dir};
 use std::fs;
 use std::io::Result;
 use std::path::PathBuf;
@@ -151,8 +151,12 @@ fn open_file(editor: String, file_path: &PathBuf) -> Result<()> {
     Ok(())
 }
 
-/// Unwraps the default template folder to be used inside other functions.
+/// Unwraps the default template folder if it exists, otherwise use the fallback format.
 fn un_path() -> PathBuf {
+    if let Some(dir) = template_dir() {
+        return dir;
+    }
+
     let default_dir = home_dir().expect("Couldn't find the default template folder");
     default_dir.join("Templates")
 }
