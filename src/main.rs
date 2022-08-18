@@ -1,9 +1,11 @@
+mod env_var;
+
 use dirs::{home_dir, template_dir};
 use std::fs;
+use std::io;
 use std::io::Result;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::{env, io};
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -126,16 +128,8 @@ fn ask_user_to_open_editor() -> bool {
 }
 
 fn open_editor(file_path: &PathBuf) {
-    let env_var = "EDITOR";
-
-    match env::var(env_var) {
-        Ok(editor) => {
-            open_file(editor, file_path).expect("Error while editing the file");
-        }
-        Err(_) => println!(
-            "Couldn't find your default editor, please set the environment variable $EDITOR"
-        ),
-    }
+    let editor = env_var::get_editor_env_var();
+    open_file(editor, file_path).expect("Error while editing the file");
 }
 
 #[inline]
