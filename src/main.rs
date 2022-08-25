@@ -1,54 +1,51 @@
+extern crate core;
+
 mod env_var;
 
 use dirs::{home_dir, template_dir};
-use std::fs;
+use std::{env, fs};
 use std::io;
 use std::io::Result;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use structopt::StructOpt;
-
-#[derive(StructOpt, Debug)]
-#[structopt(
-    name = "rtm",
-    about = "Easily manage your template files through the CLI."
-)]
-enum Manager {
-    #[structopt(
-        name = "folder",
-        about = "Define the default folder for your template files."
-    )]
-    Folder,
-    #[structopt(
-        name = "copy",
-        about = "Copy the desire template file inside the current folder."
-    )]
-    Copy { file_name: PathBuf },
-    #[structopt(
-        name = "create",
-        about = "Create a file inside your default template folder."
-    )]
-    Create { file: PathBuf },
-    #[structopt(
-        name = "delete",
-        about = "Delete file inside the default template folder."
-    )]
-    Delete { file_name: PathBuf },
-    #[structopt(
-        name = "list",
-        about = "List your template files inside your template folder."
-    )]
-    List,
-}
 
 fn main() {
-    match Manager::from_args() {
-        Manager::Folder => template_folder(),
-        Manager::Copy { file_name } => copy_file(&file_name),
-        Manager::Create { file } => create_file(file),
-        Manager::Delete { file_name } => delete_file(&file_name),
-        Manager::List => list_files(),
+    let args: Vec<String> = env::args().collect();
+    let mut str_args: Vec<&str> = args
+        .iter()
+        .map(|s| { s.as_str() })
+        .collect::<Vec<_>>();
+
+    str_args.remove(0);
+
+    match str_args.as_slice() {
+        ["folder"] => template_folder(),
+        ["list"] => list_files(),
+        ["copy", file, ..] => copy_file(file),
+        ["create", file, ..] => create_file(file),
+        ["delete", file, ..] => delete_file(file),
+        [] => help_message(),
+        _ => help_message()
     }
+}
+
+fn help_message() {
+    println!("
+rtm 0.1.0
+
+Easily manage your template files through the CLI.
+
+USAGE:
+    rtm <COMMAND>
+
+COMMAND:
+    copy <file_name>      Copy the desired template file inside the current folder.
+    create <file_name>    Create a file inside your default template folder.
+    delete <file_name>    Delete file inside your default template folder.
+    list                  List your template files.
+    folder                Display the path to your default template folder.
+    help                  Prints this message.
+");
 }
 
 /// Displays your system's default folder.
@@ -57,7 +54,7 @@ fn template_folder() {
 }
 
 /// Copy a valid file from the template folder to your current directory.
-fn copy_file(name: &PathBuf) {
+fn copy_file(name: &str) {
     let mut default_path = un_path();
     default_path.push(name);
 
@@ -69,7 +66,7 @@ fn copy_file(name: &PathBuf) {
 }
 
 /// Create a file inside your default template folder.
-fn create_file(file: PathBuf) {
+fn create_file(file: &str) {
     let mut file_path = un_path();
     file_path.push(file);
 
@@ -84,7 +81,7 @@ fn create_file(file: PathBuf) {
 }
 
 /// Delete a file from your default template folder.
-fn delete_file(file: &PathBuf) {
+fn delete_file(file: &str) {
     let mut file_path = un_path();
     file_path.push(file);
 
