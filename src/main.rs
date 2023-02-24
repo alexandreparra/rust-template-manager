@@ -96,8 +96,6 @@ fn delete_file(file: &str) {
 fn list_files() {
     let default_dir = un_path();
 
-    println!("Listing files inside: {default_dir:#?}");
-
     if let Ok(entries) = fs::read_dir(default_dir) {
         for entry in entries.flatten() {
             println!("{}", entry.file_name().to_str().unwrap());
