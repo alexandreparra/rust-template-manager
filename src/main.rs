@@ -100,7 +100,7 @@ fn list_files() {
 
     if let Ok(entries) = fs::read_dir(default_dir) {
         for entry in entries.flatten() {
-            println!("{:?}", entry.file_name());
+            println!("{}", entry.file_name().to_str().unwrap());
         }
     }
 }
