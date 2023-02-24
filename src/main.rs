@@ -59,7 +59,7 @@ fn copy_file(name: &str) {
     default_path.push(name);
 
     if let Err(e) = fs::copy(default_path, name) {
-        println!("{}", e);
+        println!("{e}");
     } else {
         println!("File copied!");
     }
@@ -71,7 +71,7 @@ fn create_file(file: &str) {
     file_path.push(file);
 
     if let Err(e) = fs::File::create(&file_path) {
-        println!("{}", e);
+        println!("{e}");
     } else {
         println!("File created.");
         if ask_user_to_open_editor() {
@@ -86,7 +86,7 @@ fn delete_file(file: &str) {
     file_path.push(file);
 
     if let Err(e) = fs::remove_file(file_path) {
-        println!("{}", e);
+        println!("{e}");
     } else {
         println!("File deleted");
     }
@@ -96,13 +96,11 @@ fn delete_file(file: &str) {
 fn list_files() {
     let default_dir = un_path();
 
-    println!("Listing files inside: {:#?}", default_dir);
+    println!("Listing files inside: {default_dir:#?}");
 
     if let Ok(entries) = fs::read_dir(default_dir) {
-        for entry in entries {
-            if let Ok(entry) = entry {
-                println!("{:?}", entry.file_name());
-            }
+        for entry in entries.flatten() {
+            println!("{:?}", entry.file_name());
         }
     }
 }
@@ -131,23 +129,25 @@ fn open_editor(file_path: &PathBuf) {
 
 #[inline]
 fn open_file(editor: String, file_path: &PathBuf) -> Result<()> {
-    Command::new(&editor)
+    Command::new(editor)
         .arg(file_path)
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
-        .output()?
-        .status;
+        .output()?;
 
     Ok(())
 }
 
 /// Unwraps the default template folder if it exists, otherwise use the fallback format.
 fn un_path() -> PathBuf {
-    if let Some(dir) = template_dir() {
-        return dir;
+    match template_dir() {
+        None => fallback_dir(),
+        Some(dir) => dir
     }
+}
 
+fn fallback_dir() -> PathBuf {
     let default_dir = home_dir().expect("Couldn't find the default template folder");
     default_dir.join("Templates")
 }
