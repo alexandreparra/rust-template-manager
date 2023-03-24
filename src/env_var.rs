@@ -8,5 +8,5 @@ pub fn get_editor_env_var() -> String {
         return visual;
     }
 
-    return env::var(EDITOR).expect("Couldn't find any default editor to open the file with");
+    env::var(EDITOR).expect("Couldn't find any default editor to open the file with")
 }
