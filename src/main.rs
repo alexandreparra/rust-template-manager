@@ -5,7 +5,7 @@ mod env_var;
 use dirs::{home_dir, template_dir};
 use std::{env, fs};
 use std::io;
-use std::io::Result;
+use std::io::{Result, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
@@ -23,7 +23,8 @@ fn main() {
         ["list"] => list_files(),
         ["copy", file, ..] => copy_file(file),
         ["create", file, ..] => create_file(file),
-        ["delete", file, ..] => delete_file(file),
+        ["delete", file] => delete_file(file),
+        ["delete", files @ .. ] => delete_files(files),
         [] => help_message(),
         _ => help_message()
     }
@@ -48,12 +49,10 @@ COMMAND:
 ");
 }
 
-/// Displays your system's default folder.
 fn template_folder() {
     println!("Your default template folder is: {:?}", un_path());
 }
 
-/// Copy a valid file from the template folder to your current directory.
 fn copy_file(name: &str) {
     let mut default_path = un_path();
     default_path.push(name);
@@ -65,7 +64,6 @@ fn copy_file(name: &str) {
     }
 }
 
-/// Create a file inside your default template folder.
 fn create_file(file: &str) {
     let mut file_path = un_path();
     file_path.push(file);
@@ -80,7 +78,12 @@ fn create_file(file: &str) {
     }
 }
 
-/// Delete a file from your default template folder.
+fn delete_files(files: &[&str]) {
+    for file in files {
+       delete_file(file);
+    }
+}
+
 fn delete_file(file: &str) {
     let mut file_path = un_path();
     file_path.push(file);
@@ -92,7 +95,6 @@ fn delete_file(file: &str) {
     }
 }
 
-/// List the files inside your template folder.
 fn list_files() {
     let default_dir = un_path();
 
@@ -104,7 +106,8 @@ fn list_files() {
 }
 
 fn ask_user_to_open_editor() -> bool {
-    println!("Do you want to edit this file? y/N");
+    print!("Do you want to edit this file? (y/n) ");
+    io::stdout().flush().expect("Failed to print message");
 
     loop {
         let mut line = String::new();
