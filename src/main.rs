@@ -37,15 +37,15 @@ rtm 0.1.0
 Easily manage your template files through the CLI.
 
 USAGE:
-    rtm <COMMAND>
+    rtm [COMMAND]
 
 COMMAND:
-    copy <file_name>      Copy the desired template file inside the current folder.
-    create <file_name>    Create a file inside your default template folder.
-    delete <file_name>    Delete file inside your default template folder.
-    list                  List your template files.
-    folder                Display the path to your default template folder.
-    help                  Prints this message.
+    copy [FILE]       Copy the desired template file inside the current folder.
+    create [FILE]     Create a file inside your default template folder.
+    delete [FILE]...  Delete files inside your default template folder.
+    list              List your template files.
+    folder            Display the path to your default template folder.
+    help              Prints this message.
 ");
 }
 
