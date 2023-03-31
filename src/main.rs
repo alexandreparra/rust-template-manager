@@ -22,7 +22,17 @@ fn main() {
         ["folder"] => template_folder(),
         ["list"] => list_files(),
         ["copy", file, ..] => copy_file(file),
-        ["create", file, ..] => create_file(file),
+        ["create", file, flags @ ..] => {
+            if flags.is_empty() {
+                create_file(file, false);
+            }
+
+            if flags[0] == "-ne" {
+                create_file(file, true);
+            } else {
+                println!("Unknown {} flag", flags[0]);
+            }
+        },
         ["delete", file] => delete_file(file),
         ["delete", files @ .. ] => delete_files(files),
         [] => help_message(),
@@ -40,12 +50,15 @@ USAGE:
     rtm [COMMAND]
 
 COMMAND:
-    copy [FILE]       Copy the desired template file inside the current folder.
-    create [FILE]     Create a file inside your default template folder.
-    delete [FILE]...  Delete files inside your default template folder.
-    list              List your template files.
-    folder            Display the path to your default template folder.
-    help              Prints this message.
+    copy [FILE]            Copy the desired template file inside the current folder.
+    create [FILE] [FLAGS]  Create a file inside your default template folder.
+    delete [FILE]...       Delete files inside your default template folder.
+    list                   List your template files.
+    folder                 Display the path to your default template folder.
+    help                   Prints this message.
+
+FLAGS:
+    -ne               No-edit, supress and ignore the choice to edit a newly created file.
 ");
 }
 
@@ -64,7 +77,7 @@ fn copy_file(name: &str) {
     }
 }
 
-fn create_file(file: &str) {
+fn create_file(file: &str, no_edit: bool) {
     let mut file_path = un_path();
     file_path.push(file);
 
@@ -72,7 +85,7 @@ fn create_file(file: &str) {
         println!("{e}");
     } else {
         println!("File created.");
-        if ask_user_to_open_editor() {
+        if !no_edit && ask_user_to_open_editor() {
             open_editor(&file_path);
         }
     }
