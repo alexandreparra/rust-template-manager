@@ -51,3 +51,6 @@ mv rtm $HOME/.local/bin
 # or
 sudo mv rtm /usr/bin
 ```
+### Tests
+Environment tests are provided inside the `tests/` folder, it contains a tiny python script
+that's going to test `rtm` commands on a real system.
