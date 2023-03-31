@@ -69,7 +69,7 @@ def clean_file_list(files: list[bytes]) -> list[str]:
 
 
 def delete_files(rtm_path: str, files: str):
-    return exec_rtm_command(rtm_path, f"delete {files}")
+    exec_rtm_command(rtm_path, f"delete {files}")
 
 
 def list_files(rtm_path: str) -> list[bytes]:
@@ -80,8 +80,8 @@ def get_folder(rtm_path: str) -> list[bytes]:
     return exec_rtm_command(rtm_path, "folder")
 
 
-def create_file(rtm_path: str, file_name: str) -> list[bytes]:
-    return exec_rtm_command(rtm_path, f"create {file_name} -ne")
+def create_file(rtm_path: str, file_name: str):
+    exec_rtm_command(rtm_path, f"create {file_name} -ne")
 
 
 def copy_file(rtm_path: str, file_name: str):
