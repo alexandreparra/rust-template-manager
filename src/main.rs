@@ -1,13 +1,14 @@
 extern crate core;
 
 mod env_var;
+mod file_util;
 
-use dirs::{home_dir, template_dir};
 use std::{env, fs};
 use std::io;
 use std::io::{Result, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
+use crate::file_util::un_path;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -32,11 +33,15 @@ fn main() {
             } else {
                 println!("Unknown {} flag", flags[0]);
             }
-        },
+        }
         ["delete", file] => delete_file(file),
         ["delete", files @ .. ] => delete_files(files),
+        ["edit", file] => edit_file(file),
+        ["help"] => help_message(),
         [] => help_message(),
-        _ => help_message()
+        x => {
+            println!("Command '{}' doesn't exist \nRun 'rtm help' to display commands", x[0]);
+        }
     }
 }
 
@@ -50,9 +55,10 @@ USAGE:
     rtm [COMMAND]
 
 COMMAND:
-    copy [FILE]            Copy the desired template file inside the current folder.
+    copy   [FILE]          Copy the desired template file inside the current folder.
     create [FILE] [FLAGS]  Create a file inside your default template folder.
     delete [FILE]...       Delete files inside your default template folder.
+    edit   [FILE]          Edit a template file with your
     list                   List your template files.
     folder                 Display the path to your default template folder.
     help                   Prints this message.
@@ -85,7 +91,7 @@ fn create_file(file: &str, no_edit: bool) {
         println!("{e}");
     } else {
         println!("File created.");
-        if !no_edit && ask_user_to_open_editor() {
+        if !no_edit && ask_user_to_open_editor(None) {
             open_editor(&file_path);
         }
     }
@@ -93,7 +99,7 @@ fn create_file(file: &str, no_edit: bool) {
 
 fn delete_files(files: &[&str]) {
     for file in files {
-       delete_file(file);
+        delete_file(file);
     }
 }
 
@@ -108,6 +114,12 @@ fn delete_file(file: &str) {
     }
 }
 
+fn edit_file(file: &str) {
+    let mut file_path = un_path();
+    file_path.push(file);
+    open_editor(&file_path);
+}
+
 fn list_files() {
     let default_dir = un_path();
 
@@ -118,8 +130,13 @@ fn list_files() {
     }
 }
 
-fn ask_user_to_open_editor() -> bool {
-    print!("Do you want to edit this file? (y/n) ");
+fn ask_user_to_open_editor(message: Option<&str>) -> bool {
+    if let Some(m) = message {
+        print!("{m}");
+    } else {
+        print!("Do you want to edit this file? (y/n) ");
+    }
+
     io::stdout().flush().expect("Failed to print message");
 
     loop {
@@ -138,7 +155,26 @@ fn ask_user_to_open_editor() -> bool {
 
 fn open_editor(file_path: &PathBuf) {
     let editor = env_var::get_editor_env_var();
-    open_file(editor, file_path).expect("Error while editing the file");
+
+    if let Some(visual) = editor.visual {
+        let result = open_file(visual, file_path);
+        if result.is_ok() {
+            return;
+        }
+    }
+
+    if !ask_user_to_open_editor(
+        Some("Failed to open visual editor, do you want to open the file on your terminal? (y/n)")
+    ) {
+        return;
+    }
+
+    if let Some(editor) = editor.editor {
+        let result = open_file(editor, file_path);
+        if result.is_err() {
+            println!("Couldn't open any of your default editors");
+        }
+    }
 }
 
 #[inline]
@@ -151,17 +187,4 @@ fn open_file(editor: String, file_path: &PathBuf) -> Result<()> {
         .output()?;
 
     Ok(())
-}
-
-/// Unwraps the default template folder if it exists, otherwise use the fallback format.
-fn un_path() -> PathBuf {
-    match template_dir() {
-        None => fallback_dir(),
-        Some(dir) => dir
-    }
-}
-
-fn fallback_dir() -> PathBuf {
-    let default_dir = home_dir().expect("Couldn't find the default template folder");
-    default_dir.join("Templates")
 }
