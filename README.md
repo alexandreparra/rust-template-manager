@@ -1,4 +1,4 @@
-### Rust Template Manager
+## Rust Template Manager
 
 Rust Template Manager (rtm) is a simple CLI program used to create/copy/delete files from your system's default template folder.
 
@@ -20,14 +20,24 @@ Copy a file from your template folder, the name must be compatible.
 ```shell
 rtm copy <file_name>
 ```
-Create a file inside your default template folder:
+Create a file inside your template folder:
 ```shell
 rtm create <file_name>
 ```
-Delete a file inside your default template folder:
+Delete one or more files inside your template folder:
 ```shell
 rtm delete <file_name>
 ```
+Edit an existing file inside your template folder:
+```shell
+rtm edit <file_name>
+```
+
+### Editing files behaviour
+On Linux rtm searches for the environmental variables `$VISUAL` and `$EDITOR`, it tries both variables.
+
+On Windows it simply invokes the `start` command which takes care of opening a program based on the file extension,
+or automatically asks you to provide the software you want to open the file with.
 
 ### Installing
 #### Build from source
