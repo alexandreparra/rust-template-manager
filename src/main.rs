@@ -1,16 +1,18 @@
 extern crate core;
 
+#[cfg(target_os = "linux")]
 mod env_var;
+
 mod file_util;
 
 use std::{env, fs};
 use std::io;
 use std::io::{Result, Write};
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::{Command, ExitCode, Stdio};
 use crate::file_util::un_path;
 
-fn main() {
+fn main() -> ExitCode {
     let args: Vec<String> = env::args().collect();
     let mut str_args: Vec<&str> = args
         .iter()
@@ -26,12 +28,14 @@ fn main() {
         ["create", file, flags @ ..] => {
             if flags.is_empty() {
                 create_file(file, false);
+                return ExitCode::SUCCESS;
             }
 
             if flags[0] == "-ne" {
                 create_file(file, true);
             } else {
                 println!("Unknown {} flag", flags[0]);
+                return ExitCode::FAILURE;
             }
         }
         ["delete", file] => delete_file(file),
@@ -41,8 +45,11 @@ fn main() {
         [] => help_message(),
         x => {
             println!("Command '{}' doesn't exist \nRun 'rtm help' to display commands", x[0]);
+            return ExitCode::FAILURE;
         }
     }
+
+    ExitCode::SUCCESS
 }
 
 fn help_message() {
@@ -91,6 +98,8 @@ fn create_file(file: &str, no_edit: bool) {
         println!("{e}");
     } else {
         println!("File created.");
+
+        #[cfg(target_os = "linux")]
         if !no_edit && ask_user_to_open_editor(None) {
             open_editor(&file_path);
         }
@@ -153,6 +162,19 @@ fn ask_user_to_open_editor(message: Option<&str>) -> bool {
     }
 }
 
+/////////////////////////
+// File opening
+////////////////////////
+
+#[cfg(target_os = "windows")]
+fn open_editor(file_path: &PathBuf) {
+    let result = open_file(file_path);
+    if result.is_err() {
+        println!("Failed to open your file on a text editor");
+    }
+}
+
+#[cfg(target_os = "linux")]
 fn open_editor(file_path: &PathBuf) {
     let editor = env_var::get_editor_env_var();
 
@@ -164,20 +186,37 @@ fn open_editor(file_path: &PathBuf) {
     }
 
     if !ask_user_to_open_editor(
-        Some("Failed to open visual editor, do you want to open the file on your terminal? (y/n)")
+        Some("Failed to open visual editor, do you want to open the file on your terminal? (y/n) ")
     ) {
         return;
     }
 
     if let Some(editor) = editor.editor {
         let result = open_file(editor, file_path);
-        if result.is_err() {
-            println!("Couldn't open any of your default editors");
+        if result.is_ok() {
+            return;
         }
     }
+
+    println!("Couldn't open any of your default editors");
 }
 
 #[inline]
+#[cfg(target_os = "windows")]
+fn open_file(file_path: &PathBuf) -> Result<()> {
+    Command::new("cmd")
+        .args(["/c", "start"])
+        .arg(file_path)
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .output()?;
+
+    Ok(())
+}
+
+#[inline]
+#[cfg(target_os = "linux")]
 fn open_file(editor: String, file_path: &PathBuf) -> Result<()> {
     Command::new(editor)
         .arg(file_path)
