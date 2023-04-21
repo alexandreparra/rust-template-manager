@@ -8,4 +8,4 @@ python3 test.py /path/to/rtm
 
 If no path is provided `test.py` will assume rtm is installed at a known binary location.
 
-Supported platforms are located at the main README.
+Only Linux is supported by now.
