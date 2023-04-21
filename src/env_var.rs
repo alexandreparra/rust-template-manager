@@ -23,8 +23,6 @@ impl Editors {
     fn set_editor(&mut self, editor: String) {
         self.editor = Some(editor);
     }
-
-
 }
 
 pub fn get_editor_env_var() -> Editors {
