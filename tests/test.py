@@ -1,10 +1,10 @@
-import time
 from pathlib import Path
 
 import os.path
 import random
 import subprocess
 import sys
+import time
 
 
 def test(rtm_path: str = None):
