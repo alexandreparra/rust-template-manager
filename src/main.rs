@@ -3,14 +3,12 @@ extern crate core;
 #[cfg(target_os = "linux")]
 mod env_var;
 
-mod file_util;
+mod file;
 
 use std::{env, fs};
 use std::io;
-use std::io::{Result, Write};
-use std::path::PathBuf;
-use std::process::{Command, ExitCode, Stdio};
-use crate::file_util::un_path;
+use std::io::Write;
+use std::process::ExitCode;
 
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().collect();
@@ -76,11 +74,11 @@ FLAGS:
 }
 
 fn template_folder() {
-    println!("Your default template folder is: {:?}", un_path());
+    println!("Your default template folder is: {:?}", file::unwrap_path());
 }
 
 fn copy_file(name: &str) {
-    let mut default_path = un_path();
+    let mut default_path = file::unwrap_path();
     default_path.push(name);
 
     if let Err(e) = fs::copy(default_path, name) {
@@ -91,7 +89,7 @@ fn copy_file(name: &str) {
 }
 
 fn create_file(file: &str, no_edit: bool) {
-    let mut file_path = un_path();
+    let mut file_path = file::unwrap_path();
     file_path.push(file);
 
     if let Err(e) = fs::File::create(&file_path) {
@@ -99,9 +97,9 @@ fn create_file(file: &str, no_edit: bool) {
     } else {
         println!("File created.");
 
-        #[cfg(target_os = "linux")]
+        #[cfg(not(target_os = "windows"))]
         if !no_edit && ask_user_to_open_editor(None) {
-            open_editor(&file_path);
+            file::open_editor(&file_path);
         }
     }
 }
@@ -113,7 +111,7 @@ fn delete_files(files: &[&str]) {
 }
 
 fn delete_file(file: &str) {
-    let mut file_path = un_path();
+    let mut file_path = file::unwrap_path();
     file_path.push(file);
 
     if let Err(e) = fs::remove_file(file_path) {
@@ -124,18 +122,19 @@ fn delete_file(file: &str) {
 }
 
 fn edit_file(file: &str) {
-    let mut file_path = un_path();
-    file_path.push(file);
-    open_editor(&file_path);
+    let mut file_path = file::unwrap_path();
+    file_path.push(file); file::open_editor(&file_path);
 }
 
 fn list_files() {
-    let default_dir = un_path();
+    let default_dir = file::unwrap_path();
 
     if let Ok(entries) = fs::read_dir(default_dir) {
         for entry in entries.flatten() {
             println!("{}", entry.file_name().to_str().unwrap());
         }
+    } else {
+        println!("No template files created.");
     }
 }
 
@@ -160,70 +159,4 @@ fn ask_user_to_open_editor(message: Option<&str>) -> bool {
             _ => continue,
         }
     }
-}
-
-/////////////////////////
-// File opening
-////////////////////////
-
-#[cfg(target_os = "windows")]
-fn open_editor(file_path: &PathBuf) {
-    let result = open_file(file_path);
-    if result.is_err() {
-        println!("Failed to open your file on a text editor");
-    }
-}
-
-#[cfg(target_os = "linux")]
-fn open_editor(file_path: &PathBuf) {
-    let editor = env_var::get_editor_env_var();
-
-    if let Some(visual) = editor.visual {
-        let result = open_file(visual, file_path);
-        if result.is_ok() {
-            return;
-        }
-    }
-
-    if !ask_user_to_open_editor(
-        Some("Failed to open visual editor, do you want to open the file on your terminal? (y/n) ")
-    ) {
-        return;
-    }
-
-    if let Some(editor) = editor.editor {
-        let result = open_file(editor, file_path);
-        if result.is_ok() {
-            return;
-        }
-    }
-
-    println!("Couldn't open any of your default editors");
-}
-
-#[inline]
-#[cfg(target_os = "windows")]
-fn open_file(file_path: &PathBuf) -> Result<()> {
-    Command::new("cmd")
-        .args(["/c", "start"])
-        .arg(file_path)
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .output()?;
-
-    Ok(())
-}
-
-#[inline]
-#[cfg(target_os = "linux")]
-fn open_file(editor: String, file_path: &PathBuf) -> Result<()> {
-    Command::new(editor)
-        .arg(file_path)
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .output()?;
-
-    Ok(())
 }
