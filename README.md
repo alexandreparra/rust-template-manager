@@ -2,11 +2,13 @@
 
 Rust Template Manager (rtm) is a simple CLI program used to create/copy/delete files from your system's default template folder.
 
-Rtm works by searching for your system's default template folder, if your platforms doesn't support such directory or it doesn't exist for any other reason, rtm will fallback to a folder called "Templates" inside your home directory. That's because rtm is meant to run on GUI and terminal systems (like WSL), so you can take advantage of template management nonetheless.
+Rtm works by searching for your system's default template folder, if your platforms doesn't support such directory (like MacOS) or it just doesn't exist for any reason,
+rtm will fallback to creating a folder named "rtm" inside your default config directory, in which all the templates files will live in.
 
-Tested on:
-- Linux (WSL and Native)
-- Windows
+**Platforms:**
+- Linux (WSL and Native) using $VISUAL and $EDITOR env vars.
+- Windows using the `start` command
+- MacOS using the `open` command
 
 ### Syntax
 Print your default template folder path:
@@ -40,6 +42,8 @@ On Linux rtm searches for the environmental variables `$VISUAL` and `$EDITOR`, i
 On Windows it simply invokes the `start` command which takes care of opening a program based on the file extension,
 or automatically asks you to provide the software you want to open the file with.
 
+On MacOS it uses the `open` command that handles automatically opening files with your prefered text editor (same as Windows).
+
 ### Installing
 #### Build from source
 You'll need the rust programming language and it's tools, the easiest way is to install [rustup](https://www.rust-lang.org/tools/install).
@@ -64,4 +68,4 @@ sudo mv rtm /usr/bin
 ```
 ### Tests
 Environment tests are provided inside the `tests/` folder, it contains a tiny python script
-that's going to test `rtm` commands on a real system.
+that's going to test `rtm` commands on a real system (Only available for Linux).
