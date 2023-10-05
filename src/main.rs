@@ -1,13 +1,12 @@
 extern crate core;
 
-#[cfg(target_os = "linux")]
-mod env_var;
+#[cfg(not(target_os = "windows"))]
+pub mod env_var;
 
 mod file;
+mod util;
 
 use std::{env, fs};
-use std::io;
-use std::io::Write;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
@@ -25,20 +24,44 @@ fn main() -> ExitCode {
         ["copy", file, ..] => copy_file(file),
         ["create", file, flags @ ..] => {
             if flags.is_empty() {
-                create_file(file, false);
+                create_file(file, false, false);
                 return ExitCode::SUCCESS;
             }
 
-            if flags[0] == "-ne" {
-                create_file(file, true);
-            } else {
-                println!("Unknown {} flag", flags[0]);
-                return ExitCode::FAILURE;
+            match flags[0] {
+                "-ne" => {
+                    create_file(file, true, false);
+                }
+                #[cfg(not(target_os = "windows"))]
+                "-pv" => {
+                    create_file(file, false, true);
+                }
+                _ => {
+                    println!("Unknown flag: '{}' for create command", flags[0]);
+                    return ExitCode::FAILURE;
+                }
             }
         }
         ["delete", file] => delete_file(file),
         ["delete", files @ .. ] => delete_files(files),
-        ["edit", file] => edit_file(file),
+        ["edit", file, flags @ ..] => {
+            if flags.is_empty() {
+                edit_file(file, false);
+                return ExitCode::SUCCESS;
+            }
+
+            match flags[0] {
+                #[cfg(not(target_os = "windows"))]
+                "-pv" => {
+                    edit_file(file, true);
+                }
+                _ => {
+                    println!("Unknown flag: '{}' for edit command", flags[0]);
+                    return ExitCode::FAILURE;
+                }
+            }
+
+        },
         ["help"] => help_message(),
         [] => help_message(),
         x => {
@@ -52,7 +75,7 @@ fn main() -> ExitCode {
 
 fn help_message() {
     println!("
-rtm 0.1.0
+rtm 0.2.0
 
 Easily manage your template files through the CLI.
 
@@ -63,13 +86,15 @@ COMMAND:
     copy   [FILE]          Copy the desired template file inside the current folder.
     create [FILE] [FLAGS]  Create a file inside your default template folder.
     delete [FILE]...       Delete files inside your default template folder.
-    edit   [FILE]          Edit a template file with your
+    edit   [FILE] [FLAGS]  Edit a template file with your
     list                   List your template files.
     folder                 Display the path to your default template folder.
     help                   Prints this message.
 
 FLAGS:
-    -ne               No-edit, supress and ignore the choice to edit a newly created file.
+    -ne               No-edit, suppress the choice to edit a newly created file (invalidates other flags)
+    -pv               Prefer visual, this will try to use $VISUAL env var on MacOS and Linux, if it doesn't succeed
+                      then it'll use open or xdg-open, fall-backing yet again to $EDITOR.
 ");
 }
 
@@ -88,7 +113,7 @@ fn copy_file(name: &str) {
     }
 }
 
-fn create_file(file: &str, no_edit: bool) {
+fn create_file(file: &str, no_edit: bool, prefer_visual: bool) {
     let mut file_path = file::unwrap_path();
     file_path.push(file);
 
@@ -97,9 +122,16 @@ fn create_file(file: &str, no_edit: bool) {
     } else {
         println!("File created.");
 
+        #[cfg(target_os = "windows")]
+        file::open_editor(&file_path);
+
         #[cfg(not(target_os = "windows"))]
-        if !no_edit && ask_user_to_open_editor(None) {
-            file::open_editor(&file_path);
+        if !no_edit && util::ask_user_to_open_editor(None) {
+            if prefer_visual {
+                file::open_editor(&file_path)
+            } else {
+                file::open_terminal_editor(&file_path);
+            }
         }
     }
 }
@@ -121,9 +153,15 @@ fn delete_file(file: &str) {
     }
 }
 
-fn edit_file(file: &str) {
+fn edit_file(file: &str, prefer_visual: bool) {
     let mut file_path = file::unwrap_path();
-    file_path.push(file); file::open_editor(&file_path);
+    file_path.push(file);
+
+    if prefer_visual {
+        file::open_editor(&file_path);
+    } else {
+        file::open_terminal_editor(&file_path);
+    }
 }
 
 fn list_files() {
@@ -135,28 +173,5 @@ fn list_files() {
         }
     } else {
         println!("No template files created.");
-    }
-}
-
-fn ask_user_to_open_editor(message: Option<&str>) -> bool {
-    if let Some(m) = message {
-        print!("{m}");
-    } else {
-        print!("Do you want to edit this file? (y/n) ");
-    }
-
-    io::stdout().flush().expect("Failed to print message");
-
-    loop {
-        let mut line = String::new();
-        io::stdin()
-            .read_line(&mut line)
-            .expect("Couldn't read line");
-
-        match line.trim().to_lowercase().as_str() {
-            "yes" | "ye" | "y" => return true,
-            "no" | "n" => return false,
-            _ => continue,
-        }
     }
 }
